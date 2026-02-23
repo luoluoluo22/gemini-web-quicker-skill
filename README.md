@@ -10,18 +10,42 @@
 
 ## 🛠️ 首次使用配置指南
 
-### 1. 准备 Quicker 环境 (核心)
-本插件运行在 Quicker 动作提供的代理之上。
-1.  **下载 Quicker**: [getquicker.net](https://getquicker.net/Download)
-2.  **安装动作**: [Gemini 网页转 API 提供服务](https://getquicker.net/Sharedaction?code=54037596-7003-47cb-dca5-08de3bb54158)
-3.  **运行动作**: 在 Quicker 中启动动作，并保持其运行。
-![alt text](image.png)
-### 2. 本地环境准备
+### 1. 安装 Quicker 与动作 (核心前置)
+本项目依赖名为 `Geimini网页转api提供服务` 的 Quicker 动作来驱动本地的无头浏览器。
+1.  **下载并安装 Quicker**: [Quicker 官网](https://getquicker.net) (支持 Windows)。
+2.  **安装必要动作**: 安装动作 [Gemini 网页转 API 提供服务](https://getquicker.net/Sharedaction?code=54037596-7003-47cb-dca5-08de3bb54158)。
+3.  **启动服务**: 在 Quicker 面板中点击该动作使其处于**运行中**状态，它将默认在 `http://127.0.0.1:55557/v1` 提供兼容 OpenAI 格式的 API 服务。
+
+### 2. 克隆与安装 (Manual Git Clone)
+如果您是 Mac/Linux 用户或偏好手动操作，请参考以下对应 IDE 命令：
+
+**🤖 Antigravity / Gemini Code Assist:**
+```bash
+git clone https://github.com/luoluoluo22/gemini-web-quicker-skill.git .agent/skills/gemini-web-quicker-skill
+```
+
+**🚀 Trae IDE:**
+```bash
+git clone https://github.com/luoluoluo22/gemini-web-quicker-skill.git .trae/skills/gemini-web-quicker-skill
+```
+
+**🧠 Claude Code:**
+```bash
+git clone https://github.com/luoluoluo22/gemini-web-quicker-skill.git .claude/skills/gemini-web-quicker-skill
+```
+
+**💻 Cursor / VSCode / 通用:**
+```bash
+# 通用方式：安装到根目录 include 列表
+git clone https://github.com/luoluoluo22/gemini-web-quicker-skill.git skills/gemini-web-quicker-skill
+```
+
+### 3. 本地环境准备
 *   **安装 FFmpeg (推荐)**: 视频分析功能依赖 FFmpeg 进行智能压缩以实现极速上传。
     *   **Windows**: `choco install ffmpeg` 或从 [ffmpeg.org](https://ffmpeg.org/download.html) 下载。
 
 
-### 3. 连接验证
+### 4. 连接验证
 安装并配置完成后，您可以直接在 AI 助手中发送指令：
 > "确认 gemini-web-quicker 技能配置好了吗？帮我查看一下支持的模型。"
 
