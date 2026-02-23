@@ -5,6 +5,7 @@ import base64
 import re
 import requests
 from pathlib import Path
+from PIL import Image
 
 # Add libs to path
 current_dir = Path(__file__).parent
@@ -16,6 +17,21 @@ try:
 except ImportError:
     print("[-] Error: libs module not found")
     sys.exit(1)
+
+def create_black_reference_image(size_str, output_dir):
+    """
+    根据尺寸字符串 (如 1280x720) 创建一张纯黑图作为参考。
+    """
+    try:
+        w, h = map(int, size_str.split('x'))
+        img = Image.new('RGB', (w, h), color='black')
+        output_dir.mkdir(parents=True, exist_ok=True)
+        path = output_dir / f"ref_black_{size_str}.png"
+        img.save(path)
+        return path
+    except Exception as e:
+        print(f"[-] Failed to create reference image: {e}")
+        return None
 
 def main():
     if len(sys.argv) < 2:
@@ -29,13 +45,62 @@ def main():
     ratio_map = {
         "16:9": "1280x720",
         "9:16": "720x1280", 
+        "4:3": "1024x768",
+        "3:4": "768x1024",
         "1:1": "1024x1024"
     }
     
     target_size = ratio_map.get(size_arg, size_arg)
     
+    # [优化]: 将尺寸控制逻辑结合进提示词 (Prompt Injection)
+    # Gemini 网页版对 "16:9 aspect ratio", "widescreen", "portrait" 等词汇更敏感
+    enhanced_prompt = prompt
+    if size_arg == "16:9":
+        if "16:9" not in prompt and "widescreen" not in prompt.lower():
+            enhanced_prompt = f"{prompt}, widescreen, cinematic wide shot, 16:9 aspect ratio"
+    elif size_arg == "9:16":
+        if "9:16" not in prompt and "portrait" not in prompt.lower():
+            enhanced_prompt = f"{prompt}, portrait, vertical poster, phone wallpaper format, 9:16 aspect ratio"
+    elif size_arg == "4:3":
+        if "4:3" not in prompt and "landscape" not in prompt.lower():
+            enhanced_prompt = f"{prompt}, standard landscape, 4:3 aspect ratio"
+    elif size_arg == "3:4":
+        if "3:4" not in prompt and "portrait" not in prompt.lower():
+            enhanced_prompt = f"{prompt}, standard portrait, 3:4 aspect ratio"
+    elif size_arg:
+        if size_arg not in prompt:
+            enhanced_prompt = f"{prompt}, {size_arg} aspect ratio"
+    
+    def create_blank_reference_image(size_str, output_dir):
+        """
+        根据尺寸字符串创建一个纯白画布。使用白底（代表空白画板）或随机噪点更不容易影响最终成图的色调。
+        """
+        try:
+            output_dir.mkdir(parents=True, exist_ok=True)
+            path = output_dir / f"ref_blank_{size_str}.png"
+            # [持久化缓存]: 如果该比例的白底图已存在，直接复用，不重复创建
+            if not path.exists():
+                w, h = map(int, size_str.split('x'))
+                img = Image.new('RGB', (w, h), color='white')
+                img.save(path)
+            return path
+        except Exception as e:
+            print(f"[-] Failed to create reference image: {e}")
+            return None
+
+    ref_image_path = image_path
+    if not ref_image_path and size_arg in ratio_map and size_arg != "1:1":
+        # 将参考白底图持久化存储在技能的 resources 目录中
+        ref_dir = current_dir.parent / "resources" / "aspect_ratios"
+        ref_image_path = create_blank_reference_image(target_size, ref_dir)
+        print(f"[*] Using blank reference image for ratio {size_arg} ({target_size}): {ref_image_path}")
+        # 添加防污染提示词，告诉模型仅仅使用这张图作为宽高比模板
+        if ref_image_path:
+            enhanced_prompt += " (IMPORTANT STRICT INSTRUCTION: The attached image is just a blank white canvas. IGNORING its color and content entirely. Generate the image purely based on the text prompt and fill the entire scene with appropriate, rich, and vibrant colors. ONLY use the attached image to MATCH the ASPECT RATIO)."
+    
     client = AntigravityClient()
-    res = client.generate_image(prompt, size=target_size, image_path=image_path)
+    print(f"[*] Final Prompt: {enhanced_prompt}")
+    res = client.generate_image(enhanced_prompt, size=target_size, image_path=str(ref_image_path) if ref_image_path else None)
     
     if res and "choices" in res:
         content = res["choices"][0].get("message", {}).get("content", "")

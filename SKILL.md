@@ -1,73 +1,64 @@
 ---
-name: antigravity-api-skill
-description: 当用户需要使用 Antigravity 反代出来的 API (Gemini 3 Flash,Gemini 3 pro, banana生图, 视频分析理解) 时使用此技能。
+name: gemini-web-quicker-skill
+description: 当用户需要使用 Gemini API 服务（通过 Quicker 动作提供：gemini-thinking, gemini-3-flash/pro, gemini-3-image、banana香蕉生图、视频分析理解）时使用此技能。
 ---
 
-# Antigravity Skill
+# Gemini Web-to-API (Quicker) Skill
 
 ## 目标
-利用 Antigravity API 网关提供的加强版 AI 能力，包括 **Gemini 3 Flash / Pro**文本生成与 **Gemini 3 Pro Image (Imagen 3)** 的 4K 绘图能力。
+利用由 Quicker 动作转接的 Gemini 网页版 API，提供包括 **Gemini Thinking (3.0 Thinking)**、**Gemini 3 Flash/Pro** 以及 **Imagen 3 (Gemini 3 Image)** 的高级能力。
 
 ## 场景
-- **高级对话**: 使用 Gemini 3 进行复杂逻辑分析、脚本编写。
-- **高清绘图**: 生成 16:9 4K 质量的视频素材、封面图 (优于普通绘图)。
-- **视频深度理解 (Vid2Text)**: 内置 **FFmpeg 智能压缩引擎**，支持 100MB+ 甚至 500MB+ 的超大视频。自动优化分辨率（480P）以在保留准确时间轴的前提下，实现极速上传与分析。
-- **批量素材处理**: 支持一次性喂入多个视频/图片素材。适用于分析全集剧情、对比视频色彩或批量生成解说词。
+- **深度推理**: 使用 `gemini-thinking` 进行复杂逻辑分析。
+- **极速对话**: 使用 `gemini-3-flash` 处理日常任务和视频理解。
+- **高清绘图**: 使用 `gemini-3-image` 或 `gemini-3-pro-image` 生成高质量素材。
+- **视频深度理解**: 支持大视频自动压缩上传并分析。
 
 ## 环境配置 (Setup)
 
-### 首次使用配置指南
-本技能依赖本地运行的 **Antigravity Manager** 服务。首次使用请按以下步骤配置：
+### ⚠️ 核心依赖：Quicker 动作
+本技能**必须**配合特定的 Quicker 动作运行。请按以下步骤配置：
 
-1.  **准备环境**:
-    *   **安装 FFmpeg (必填)**: 视频分析依赖它进行压缩。Windows 建议从 [ffmpeg.org](https://ffmpeg.org/download.html) 下载。
-    *   **下载客户端**: [Antigravity-Manager Releases](https://github.com/lbjlaq/Antigravity-Manager/releases)
-    *   **重要**: 必须在客户端中登录您的 **Google Pro** 账号（可在闲鱼购买，约 80 元/年）。
+1.  **安装 Quicker**: 如果尚未安装，请前往 [getquicker.net](https://getquicker.net/) 下载安装并登录。
+2.  **安装专用动作**: 复制并安装此动作：[Gemini 网页转 API 提供服务](https://getquicker.net/Sharedaction?code=54037596-7003-47cb-dca5-08de3bb54158)。
+3.  **启动服务**: 在 Quicker 中启动该动作。动作会开启一个本地 HTTP 服务（通常端口为 `55557`）。
+4.  **安装 FFmpeg (推荐)**: 当视频超过一定大小（100m）时，视频分析依赖它进行压缩。
 
-2.  **配置连接**:
-    *   **零配置启动**: 脚本会自动回退到 `config.example.json`，如果 Manager 使用默认设置（端口 8045），您可以直接开始使用，如果访问出错，尝试修改为8090，配置文件也需要同步修改。
-    *   **自定义配置**: 如需修改，请复制 `libs/data/config.example.json` 为 `config.json`。
-    *   **默认地址**: `http://127.0.0.1:845/v1`
+### 验证连接
+运行指令 "查看所有模型" 或 "确认 gemini-web-quicker 配置好了吗" 来测试。
 
-3.  **验证连接**:
-    *   运行指令 "查看所有模型" 或 "/Antigravity 技能配置好了吗" 来测试。
+## 模型列表
+- `gemini-web-api` (基础服务)
+- `gemini-thinking` (强逻辑推理)
+- `gemini-3-flash` (快节奏、多模态)
+- `gemini-3-pro` (高精度)
+- `gemini-3-image` (标准生图)
+- `gemini-3-flash-image` (快速生图)
+- `gemini-3-pro-image` (精品生图)
 
-## 指令
+## 指令建议
 
 ### 🗣️ 试试这样问 AI
-- **高级写作**: "请用 gemini-3-pro 帮我写一个短视频脚本。"
-- **高清绘图**: "用 banana 生成一张 16:9 的赛博朋克城市背景图。"
-- **参考生图**: "参考这张图 [绝对路径]，帮我画一个类似风格的饕餮巨兽。"
-- **视频理解**: "帮帮我分析下这个视频的内容：[视频路径]"
+- **逻辑分析**: "请用 gemini模型 帮我分析这段代码的潜在漏洞。"
+- **快速对话**: "请用 gemini-3-flash 帮我写一个短视频脚本。"
+- **高质量生图**: "用 gemini-3-pro-image 生成一张 16:9 的赛博朋克城市背景图。"
+- **视频理解**: "帮我分析下这个视频的内容：[视频路径]"
 - **查看模型**: "查看现在有哪些模型可以用。"
-- **推荐模型**: `gemini-3-flash` (视频理解首选), `gemini-3-pro-high`
 
-### 1. 对话与多模态 (Chat & Multimodal)
-**指令**: "请帮我写一段脚本..." / "分析这个视频: [视频路径]"
-- **执行**: `python scripts/chat.py "{Prompt}" "{ModelName}" "{FilePath1}" "{FilePath2}" ...`
-- **能力**: 
-  - 自动识别图片/视频。
-  - **超强压缩**: 内置 FFmpeg，自动优化大视频体积，支持 100MB+ 文件的秒级分析。
-  - **时间对齐**: 压缩过程不损失任何时间戳精度，完美适配“分镜拆解”与“解说打轴”任务。
-  - **建议**: 对于复杂项目，请明确指定使用 `gemini-3-pro`。
+## 脚本说明
 
-### 2. 专用视频分析 (Deep Video Analysis)
-**指令**: "分析视频分镜: [视频路径]" / "拆解这个视频: [视频路径]"
-- **执行**: `python scripts/video_analyzer.py "{VideoPath}"`
-- **优势**: 自动从 `config.json` 加载端口，默认使用最强的 `gemini-3-pro` 模型，预设专业分镜分析 Prompt，输出格式规整。
+### 1. 通用对话 (Chat)
+- **执行**: `python scripts/chat.py "{Prompt}" "{ModelName}" "{FilePath}"`
+- **能力**: 自动处理视频压缩（>100MB）并发送至 Web API。
 
-### 2. 高清绘图 (Imagen 3 / banana)
-**指令**: "用 banana 画一张..." / "生成一张 16:9 的高清图..."
-- **执行**: `python scripts/generate_image.py "{Prompt}" "{Size/Ratio}" "{ReferenceImagePath}"`
-- **参数**:
-  - `Prompt`: 描述词
-  - `Size`: 支持 `16:9`, `9:16`, `1:1` 等。
-  - `ReferenceImagePath`: (可选) 本地图片绝对路径。如果提供，AI 将参考该图片进行创作。
+### 2. 高清绘图 (Image Generation)
+- **执行**: `python scripts/generate_image.py "{Prompt}" "{Size/Ratio}"`
+- **默认模型**: `gemini-3-flash-image`
 
-### 3. 查看可用模型 (List Models)
-**指令**: "查看所有模型" / "有什么模型可以用"
+### 3. 查看可用模型
 - **执行**: `python scripts/list_models.py`
 
 ## 注意事项
-- 绘图默认开启 HD (4K) 质量。
-- 图片保存在根目录 `generated_assets/`。
+- 确保 Quicker 动作处于运行状态。
+- 如果请求超时，请检查网页端 Gemini 是否需要手动验证或已掉线。
+- 图片保存在 `generated_assets/`。

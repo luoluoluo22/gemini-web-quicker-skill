@@ -259,69 +259,101 @@ class AntigravityClient:
 
     def generate_image(self, prompt, size="1024x1024", image_path=None, quality="standard", n=1):
         """
-        [修复版]: 强制使用流式传输并手动聚合内容。
-        解决服务端在 stream=False 模式下返回空内容的 Bug。
+        [协议修正]: 完全采用原生 urllib 进行文件上传和流式处理，修复 requests 库在此场景下的边界问题。
         """
         url = f"{self.base_url}/chat/completions"
-        model = self.config.get("default_image_model", "gemini-3-pro-image")
+        model = self.config.get("default_image_model", "gemini-3-flash-image")
         
-        messages = []
+        # 统一使用顶级 files 字段传输文件 (Antigravity 专有协议)
+        files_payload = []
         if image_path and os.path.exists(image_path):
             try:
                 mime_type, _ = mimetypes.guess_type(image_path)
                 mime_type = mime_type or "image/png"
-                img_data = base64.b64encode(open(image_path, "rb").read()).decode("utf-8")
-                messages.append({
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{img_data}"}}
-                    ]
+                print(f"[*] Encoding reference image for files-payload: {os.path.basename(image_path)}", file=sys.stderr)
+                with open(image_path, "rb") as f:
+                    b64_data = base64.b64encode(f.read()).decode("ascii")
+                
+                # 完全按照 test_image_upload.py 的 payload.files 格式
+                files_payload.append({
+                    "filename": os.path.basename(image_path),
+                    "mime_type": mime_type,
+                    "file_data": f"data:{mime_type};base64,{b64_data}"
                 })
             except Exception as e:
-                messages.append({"role": "user", "content": prompt})
-        else:
-            messages.append({"role": "user", "content": prompt})
+                print(f"[-] Failed to process reference image {image_path}: {e}", file=sys.stderr)
 
         payload = {
             "model": model,
-            "messages": messages,
+            "messages": [{"role": "user", "content": prompt}],
             "size": size,
-            "stream": True # 强制开启流式以捕获完整 URL
+            "stream": True # 强制流式
         }
         
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-            "User-Agent": "Antigravity/4.0.6"
-        }
+        if files_payload:
+            payload["files"] = files_payload
+            print(f"[*] Injected reference image into payload['files']", file=sys.stderr)
         
-        print(f"[*] Sending Image Request (Streaming Aggregation) to {model}...", file=sys.stderr)
-        try:
-            response = s.post(url, headers=headers, json=payload, timeout=180, stream=True)
-            if response.status_code != 200:
-                print(f"[-] API Error {response.status_code}: {response.text}")
-                return None
-
-            full_content = ""
-            for line in response.iter_lines():
-                if line:
-                    decoded = line.decode('utf-8').strip()
-                    if decoded.startswith("data: "):
-                        content = decoded[6:]
-                        if content == "[DONE]": break
-                        try:
-                            data = json.loads(content)
-                            delta = data.get("choices", [{}])[0].get("delta", {})
-                            full_content += delta.get("content", "")
-                        except: pass
-            
-            # 返回伪造的非流式响应格式以保持向下兼容
-            return {
-                "choices": [{
-                    "message": {"content": full_content}
-                }]
+        print(f"[*] Sending Image Request (urllib Native Protocol) to {model}...", file=sys.stderr)
+        
+        import urllib.request
+        import urllib.error
+        
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            url=url,
+            method="POST",
+            data=data,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+                "Accept": "text/event-stream"
             }
+        )
+        
+        try:
+            with urllib.request.urlopen(req, timeout=180) as resp:
+                content_type = (resp.headers.get("Content-Type") or "").lower()
+                full_content = ""
+                
+                if "text/event-stream" not in content_type:
+                    raw = resp.read().decode("utf-8", errors="replace")
+                    try:
+                        obj = json.loads(raw)
+                        full_content = obj.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    except Exception:
+                        pass
+                else:
+                    for raw_line in resp:
+                        line = raw_line.decode("utf-8", errors="replace").rstrip("\r\n")
+                        if not line or not line.startswith("data:"):
+                            continue
+                            
+                        data_str = line[5:].strip()
+                        if data_str == "[DONE]": 
+                            break
+
+                        try:
+                            obj = json.loads(data_str)
+                            delta = obj.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                            if delta:
+                                full_content += delta
+                        except Exception:
+                            continue
+                
+                print(f"[*] Response content received (Length: {len(full_content)})", file=sys.stderr)
+                if len(full_content) < 500:
+                    print(f"[*] Response details: {full_content}", file=sys.stderr)
+                
+                return {
+                    "choices": [{
+                        "message": {"content": full_content}
+                    }]
+                }
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="replace")
+            print(f"[-] HTTP Error {e.code}: {err_body[:500]}", file=sys.stderr)
+            return None
         except Exception as e:
             print(f"[-] Image Request failed: {e}", file=sys.stderr)
             return None
