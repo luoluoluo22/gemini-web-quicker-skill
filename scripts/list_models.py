@@ -40,19 +40,19 @@ def main():
             
     if chat_models:
         print("--- Chat / Text Models ---")
-        for m in sorted(chat_models):
+        for m in chat_models:
             print(f"  {m}")
         print("")
         
     if image_models:
         print("--- Image / Vision Models ---")
-        for m in sorted(image_models):
+        for m in image_models:
             print(f"  {m}")
         print("")
 
     if other_models:
         print("--- Other Models ---")
-        for m in sorted(other_models):
+        for m in other_models:
             print(f"  {m}")
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 {
     "base_url": "http://127.0.0.1:55557/v1",
     "api_key": "YOUR_API_KEY_HERE",
-    "default_chat_model": "gemini-3-flash",
-    "default_image_model": "gemini-3-pro-image"
+    "default_chat_model": "gemini-3.1-pro-preview",
+    "default_image_model": "gemini-3.1-flash-image-preview"
 }
