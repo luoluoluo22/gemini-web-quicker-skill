@@ -1,87 +1,81 @@
-# Gemini Web-to-API Skill (Quicker Integration)
+# Gemini Web-to-API Skill
 
-本技能通过集成 [Quicker Gemini-Web-API 动作](https://getquicker.net/Sharedaction?code=54037596-7003-47cb-dca5-08de3bb54158) 为 Agent 提供 Gemini 网页版的高级模型支持，包括最新的思维链模型 (Thinking) 和 banana 生图。
+这个 skill 通过 Quicker 动作把 Gemini 网页版能力转换为本地 OpenAI 兼容接口。
 
-## 🌟 核心能力
-- **推理增强**: 支持 `gemini-thinking`，适合处理复杂代码逻辑和深度分析。
-- **全能对话**: 默认使用 `gemini-3-flash`，平衡速度与理解力。
-- **高清生图**: 使用 `gemini-3-image` 系列模型生成高质量图像素材。
-- **视频理解**: 支持本地视频自动压缩并上传，利用 Gemini 的长上下文能力进行视频分析。
+当前版本的策略是：
+- 文本任务优先使用 `gemini-3.1-pro-preview`
+- 轻量任务可使用 `gemini-3.1-flash-lite-preview`
+- 生图任务优先使用 `gemini-3.1-flash-image-preview`
+- 当 Quicker 动作的模型列表落后时，客户端会自动补充常用 `3.1` 模型名
+- 当优先模型不可用时，客户端会自动回退到兼容的 `3.0` 模型
 
-## 🛠️ 首次使用配置指南
+## 依赖
 
-### 1. 安装 Quicker 与动作 (核心前置)
-本项目依赖名为 `Geimini网页转api提供服务` 的 Quicker 动作来驱动本地的无头浏览器。
-1.  **下载并安装 Quicker**: [Quicker 官网](https://getquicker.net) (支持 Windows)。
-2.  **安装必要动作**: 安装动作 [Gemini 网页转 API 提供服务](https://getquicker.net/Sharedaction?code=54037596-7003-47cb-dca5-08de3bb54158)。
-3.  **启动服务**: 在 Quicker 面板中点击该动作使其处于**运行中**状态，它将默认在 `http://127.0.0.1:55557/v1` 提供兼容 OpenAI 格式的 API 服务。
+1. 安装 Quicker
+2. 安装并启动动作：
+   `https://getquicker.net/Sharedaction?code=54037596-7003-47cb-dca5-08de3bb54158`
+3. 确认本地服务地址可访问：
+   `http://127.0.0.1:55557/v1`
 
-### 2. 克隆与安装 (Manual Git Clone)
-如果您是 Mac/Linux 用户或偏好手动操作，请参考以下对应 IDE 命令：
+## 目录结构
 
-**🤖 Antigravity / Gemini Code Assist:**
+- `libs/`：本地 API 客户端封装
+- `scripts/`：对话、生图、模型查询脚本
+- `resources/`：比例参考图等资源
+
+## 推荐模型
+
+### 文本
+- `gemini-3.1-pro-preview`
+- `gemini-3.1-flash-lite-preview`
+
+### 图片
+- `gemini-3.1-flash-image-preview`
+
+### 兼容回退
+- `gemini-3-pro`
+- `gemini-3-flash`
+- `gemini-3-pro-image`
+- `gemini-3-image`
+- `gemini-3-flash-image`
+
+## 使用示例
+
+### 查看模型
 ```bash
-git clone https://github.com/luoluoluo22/gemini-web-quicker-skill.git .agent/skills/gemini-web-quicker-skill
+python scripts/list_models.py
 ```
 
-**🚀 Trae IDE:**
+### 文本对话
 ```bash
-git clone https://github.com/luoluoluo22/gemini-web-quicker-skill.git .trae/skills/gemini-web-quicker-skill
+python scripts/chat.py "请总结这段代码的风险"
 ```
 
-**🧠 Claude Code:**
+### 指定模型
 ```bash
-git clone https://github.com/luoluoluo22/gemini-web-quicker-skill.git .claude/skills/gemini-web-quicker-skill
+python scripts/chat.py "请只回复 ok" "gemini-3.1-pro-preview"
 ```
 
-**💻 Cursor / VSCode / 通用:**
+### 生成图片
 ```bash
-# 通用方式：安装到根目录 include 列表
-git clone https://github.com/luoluoluo22/gemini-web-quicker-skill.git skills/gemini-web-quicker-skill
+python scripts/generate_image.py "雨夜霓虹灯下的橘猫，电影感，高细节" "1:1"
 ```
 
-### 3. 本地环境准备
-*   **安装 FFmpeg (推荐)**: 视频分析功能依赖 FFmpeg 进行智能压缩以实现极速上传。
-    *   **Windows**: `choco install ffmpeg` 或从 [ffmpeg.org](https://ffmpeg.org/download.html) 下载。
+## 说明
 
+- `/models` 如果只返回旧的 `gemini-3-*` 列表，不代表 `3.1` 一定不可用
+- 这个客户端会优先按 `3.1` 模型名发起请求
+- 如果远端返回模型不可用或服务繁忙，会自动尝试兼容回退
 
-### 4. 连接验证
-安装并配置完成后，您可以直接在 AI 助手中发送指令：
-> "确认 gemini-web-quicker 技能配置好了吗？帮我查看一下支持的模型。"
+## 排查
 
----
+### 连接失败
+- 确认 Quicker 动作已经启动
+- 确认端口与 `config.json` 一致
 
-## 📖 技能使用 (示例指令)
+### 登录态失效
+- 检查 Gemini 网页是否要求重新登录或验证码验证
 
-- **逻辑推理**: "请用 gemini-thinking 帮我分析这个算法的优化空间。"
-- **高清绘图**: "用 gemini-3-pro-image 生成一张 16:9 的森林精灵背景图。"
-- **视频分析**: "请分析这个剪辑素材的内容：[视频路径]"
-- **查看模型**: "查看现在有哪些模型可以用。"
-
-## 📂 目录结构
-- `scripts/`: 核心执行脚本 (Chat, Image, List)。
-- `libs/`: API 客户端封装。
-- `generated_assets/`: 默认图片输出路径。
-
----
-
-## 🤖 支持的模型列表 (Gemini Web API)
-
-- `gemini-web-api`
-- `gemini-thinking` (思考模型)
-- `gemini-3-flash` (快速多模态)
-- `gemini-3-pro` (高理解力)
-- `gemini-3-image` (标准绘图)
-- `gemini-3-flash-image` (快速绘图)
-- `gemini-3-pro-image` (精品绘图)
-
----
-
-## ❓ 常见问题排查 (Troubleshooting)
-
-### 1. 连接失败 (Connection Refused)
-*   **解决方法**: 确保 Quicker 动作已经启动并显示“服务已开启”。检查端口号是否为 `55557`，并与 `config.json` 同步。
-
-### 2. 网页验证问题
-*   **现象**: 请求返回 403 或 500。
-*   **解决方法**: 请检查浏览器中的 Gemini 网页是否已掉线或弹出验证码。Quicker 动作依赖活跃的网页 Session。
+### 生图失败
+- 优先确认 Quicker 动作是否已经支持对应图片模型名
+- 如不支持，客户端会尝试回退到旧图片模型
